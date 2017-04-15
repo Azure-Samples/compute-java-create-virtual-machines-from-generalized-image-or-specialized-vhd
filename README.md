@@ -7,10 +7,15 @@ author: anuchandy
 #Getting Started with Compute - Create Virtual Machines Using Custom Image Or Specialized VHD - in Java #
 
 
-      Main function which runs the actual sample.
-      @param azure instance of the azure client
-      @return true if sample runs successfully
-     
+  Azure Compute sample for managing virtual machines -
+   - Create a virtual machine
+   - Deallocate the virtual machine
+   - Generalize the virtual machine
+   - Capture the virtual machine to create a generalized image
+   - Create a second virtual machine using the generalized image
+   - Delete the second virtual machine
+   - Create a new virtual machine by attaching OS disk of deleted VM to it.
+ 
 
 ## Running this Sample ##
 
