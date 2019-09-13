@@ -4,9 +4,8 @@ languages:
 - java
 products:
 - azure
-extensions:
-- services: Compute
-- platforms: java
+description: "Azure Compute sample for managing virtual machines."
+urlFragment: compute-java-create-virtual-machines-from-generalized-image-or-specialized-vhd
 ---
 
 # Getting Started with Compute - Create Virtual Machines Using Custom Image Or Specialized VHD - in Java #
