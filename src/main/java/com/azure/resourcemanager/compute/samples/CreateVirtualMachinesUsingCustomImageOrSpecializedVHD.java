@@ -1,26 +1,26 @@
-/**
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for
- * license information.
- */
+// Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 
-package com.microsoft.azure.management.compute.samples;
+package com.azure.resourcemanager.compute.samples;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.policy.HttpLogDetailLevel;
+import com.azure.core.management.AzureEnvironment;
+import com.azure.identity.DefaultAzureCredentialBuilder;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.compute.models.KnownLinuxVirtualMachineImage;
+import com.azure.resourcemanager.compute.models.OperatingSystemTypes;
+import com.azure.resourcemanager.compute.models.VirtualMachine;
+import com.azure.resourcemanager.compute.models.VirtualMachineSizeTypes;
+import com.azure.core.management.Region;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.resourcemanager.samples.SSHShell;
+import com.azure.resourcemanager.samples.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.MissingNode;
 import com.jcraft.jsch.JSchException;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.KnownLinuxVirtualMachineImage;
-import com.microsoft.azure.management.compute.OperatingSystemTypes;
-import com.microsoft.azure.management.compute.VirtualMachine;
-import com.microsoft.azure.management.compute.VirtualMachineSizeTypes;
-import com.microsoft.azure.management.resources.fluentcore.arm.Region;
-import com.microsoft.azure.management.samples.SSHShell;
-import com.microsoft.azure.management.samples.Utils;
-import com.microsoft.rest.LogLevel;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,20 +39,19 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
 
     /**
      * Main function which runs the actual sample.
-     * @param azure instance of the azure client
+     * @param azureResourceManager instance of the azure client
      * @return true if sample runs successfully
      */
-    public static boolean runSample(Azure azure) {
-        final String linuxVMName1 = Utils.createRandomName("VM1");
-        final String linuxVMName2 = Utils.createRandomName("VM2");
-        final String linuxVMName3 = Utils.createRandomName("VM3");
-        final String rgName = Utils.createRandomName("rgCOMV");
-        final String publicIPDnsLabel = Utils.createRandomName("pip");
+    public static boolean runSample(AzureResourceManager azureResourceManager) {
+        final String linuxVMName1 = Utils.randomResourceName(azureResourceManager, "VM1", 15);
+        final String linuxVMName2 = Utils.randomResourceName(azureResourceManager, "VM2", 15);
+        final String linuxVMName3 = Utils.randomResourceName(azureResourceManager, "VM3", 15);
+        final String rgName = Utils.randomResourceName(azureResourceManager, "rgCOMV", 15);
+        final String publicIPDnsLabel = Utils.randomResourceName(azureResourceManager, "pip", 15);
         final String userName = "tirekicker";
-        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Serves as an example, not for deployment. Please change when using this in your code.")]
-        final String password = "12NewPA$$w0rd!";
+        final String password = Utils.password();
 
-        final String apacheInstallScript = "https://raw.githubusercontent.com/Azure/azure-libraries-for-java/master/azure-samples/src/main/resources/install_apache.sh";
+        final String apacheInstallScript = "https://raw.githubusercontent.com/Azure/azure-sdk-for-java/master/sdk/resourcemanager/azure-resourcemanager-samples/src/main/resources/install_apache.sh";
         final String apacheInstallCommand = "bash install_apache.sh";
         List<String> apacheInstallScriptUris = new ArrayList<>();
         apacheInstallScriptUris.add(apacheInstallScript);
@@ -63,7 +62,7 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
 
             System.out.println("Creating a Linux VM");
 
-            VirtualMachine linuxVM = azure.virtualMachines().define(linuxVMName1)
+            VirtualMachine linuxVM = azureResourceManager.virtualMachines().define(linuxVMName1)
                     .withRegion(Region.US_EAST)
                     .withNewResourceGroup(rgName)
                     .withNewPrimaryNetwork("10.0.0.0/28")
@@ -120,7 +119,7 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
 
             System.out.println("Creating a Linux VM using captured image - " + capturedImageUri);
 
-            VirtualMachine linuxVM2 = azure.virtualMachines().define(linuxVMName2)
+            VirtualMachine linuxVM2 = azureResourceManager.virtualMachines().define(linuxVMName2)
                     .withRegion(Region.US_EAST)
                     .withExistingResourceGroup(rgName)
                     .withNewPrimaryNetwork("10.0.0.0/28")
@@ -139,7 +138,7 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
             // Deleting the virtual machine
             System.out.println("Deleting VM: " + linuxVM2.id());
 
-            azure.virtualMachines().deleteById(linuxVM2.id()); // VM required to be deleted to be able to attach it's
+            azureResourceManager.virtualMachines().deleteById(linuxVM2.id()); // VM required to be deleted to be able to attach it's
             // OS Disk VHD to another VM (Deallocate is not sufficient)
 
             System.out.println("Deleted VM");
@@ -151,7 +150,7 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
                     + specializedVhd
                     + " of deleted VM");
 
-            VirtualMachine linuxVM3 = azure.virtualMachines().define(linuxVMName3)
+            VirtualMachine linuxVM3 = azureResourceManager.virtualMachines().define(linuxVMName3)
                     .withRegion(Region.US_EAST)
                     .withExistingResourceGroup(rgName)
                     .withNewPrimaryNetwork("10.0.0.0/28")
@@ -163,16 +162,11 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
 
             Utils.print(linuxVM3);
             return true;
-        } catch (Exception f) {
-
-            System.out.println(f.getMessage());
-            f.printStackTrace();
-
         } finally {
 
             try {
                 System.out.println("Deleting Resource Group: " + rgName);
-                azure.resourceGroups().deleteByName(rgName);
+                azureResourceManager.resourceGroups().beginDeleteByName(rgName);
                 System.out.println("Deleted Resource Group: " + rgName);
             } catch (NullPointerException npe) {
                 System.out.println("Did not create any resources in Azure. No clean up is necessary");
@@ -181,7 +175,6 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
             }
 
         }
-        return false;
     }
     /**
      * Main entry point.
@@ -192,17 +185,21 @@ public final class CreateVirtualMachinesUsingCustomImageOrSpecializedVHD {
             //=============================================================
             // Authenticate
 
-            final File credFile = new File(System.getenv("AZURE_AUTH_LOCATION"));
+            final AzureProfile profile = new AzureProfile(AzureEnvironment.AZURE);
+            final TokenCredential credential = new DefaultAzureCredentialBuilder()
+                .authorityHost(profile.getEnvironment().getActiveDirectoryEndpoint())
+                .build();
 
-            Azure azure = Azure.configure()
-                    .withLogLevel(LogLevel.BASIC)
-                    .authenticate(credFile)
-                    .withDefaultSubscription();
+            AzureResourceManager azureResourceManager = AzureResourceManager
+                .configure()
+                .withLogLevel(HttpLogDetailLevel.BASIC)
+                .authenticate(credential, profile)
+                .withDefaultSubscription();
 
             // Print selected subscription
-            System.out.println("Selected subscription: " + azure.subscriptionId());
+            System.out.println("Selected subscription: " + azureResourceManager.subscriptionId());
 
-            runSample(azure);
+            runSample(azureResourceManager);
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
